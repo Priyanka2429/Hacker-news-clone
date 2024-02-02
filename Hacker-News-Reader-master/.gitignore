@@ -1,0 +1,13 @@
+env
+node_modules
+*.pyc
+*.log
+*.pot
+localsettings.py
+secret_key.py
+.sass-cache
+manifest.yml
+*.db
+/static
+*.idea
+*.iml

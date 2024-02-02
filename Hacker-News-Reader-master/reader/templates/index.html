@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% load tags %}
+{% load query %}
+{% block navbar_button %}
+<a class="btn btn-navbar" data-toggle="collapse" data-target=".sidebar-collapse">
+	<span class="icon-bar"></span>
+	<span class="icon-bar"></span>
+	<span class="icon-bar"></span>
+</a>
+{% endblock %}
+{% block container %}
+<div class="row">
+	<div class="col-sm-3 col-lg-2">
+		<div class="sidebar-container">
+			<ul class="hn-sidebar nav sidebar-collapse">
+				<form class="form-inline-reverse">
+					<div class="form-group">
+						<div class="dropdown">
+							<button class="btn dropdown-toggle" type="button" data-toggle="dropdown">
+								Sorting ({% filter_text %})
+								<span class="caret"></span>
+							</button>
+							<ul class="dropdown-menu">
+								<li class="{% active '(^/$)' %}"><a href="/">Frontpage</a></li>
+								<li class="{% active '^/self' %}"><a href="/self">Selfpost</a></li>
+								<li class="{% active '^/ask' %}"><a href="/ask">Ask HN</a></li>
+								<li class="{% active '^/show' %}"><a href="/show">Show HN</a></li>
+								<li class="{% active '^/poll' %}"><a href="/poll">Poll</a></li>
+								<li class="{% active '^/best' %}"><a href="/best">Best</a></li>
+								<li class="{% active '^/newest' %}"><a href="/newest">Newest</a></li>
+							</ul>
+						</div>
+					</div>
+					<div class="form-group">
+						<label>Score over</label>
+						<select class="form-control" name="score">
+							{% for n in '0,50,75,100'|split:',' %}
+							<option value="{{ n }}" {% active_score n %}>
+								{% if n == '0' %}Show All {% else %}{{ n }}{% endif %}
+							</option>
+							{% endfor %}
+						</select>
+					</div>
+					<div class="form-group">
+						<label>Show per page</label>
+						<select class="form-control" name="limit">
+							{% for n in '25,50,100'|split:',' %}
+							<option value="{{ n }}" {% active_limit n %}>
+								{{ n }}
+							</option>
+							{% endfor %}
+						</select>
+					</div>
+					<div class="form-group">
+						<button class="btn" type="submit">Apply filters</button>
+					</div>
+				</form>
+			</ul>
+		</div>
+	</div>
+	<div class="col-sm-9 col-lg-10">
+		{% if cache %}
+		<div class="cache">Displaying cache from {{ cache|timesince }} ago</div>
+		{% endif %}
+		<div class="stories">
+			{% for story in stories %}
+			<div class="story">
+				<ul class="vote">
+				{% with story.id|stringformat:'s' as storyid %}
+				{% if storyid in votes and votes|get_value:storyid == None %}
+					<li><p class="up">▲</p></li>
+					<li>{{ story.score|default:"0" }}</li>
+					<li><p class="down">▼</p></li>
+				{% else %}
+					<li><a href="/vote/{{ story.id }}?dir=up" class="up">▲</a></li>
+					<li>{{ story.score|default:"0" }}</li>
+					<li><a href="/vote/{{ story.id }}?dir=down" class="down">▼</a></li>
+				{% endif %}
+				{% endwith %}
+				</ul>
+				<div class="info">
+					<h5>{% if story.dead %}
+						{{ story.title|safe }} <span class="muted">(dead)</span>
+						{% elif story.selfpost %}
+						<a class="link" href="/comments/{{ story.id }}/">{{ story.title|safe }}</a>
+						{% else %}
+						<a class="link" href="{{ story.url }}">{{ story.title|safe }}</a> {% if not story.selfpost %}({{ story.url|domain }}){% endif %}
+						{% endif %}
+					</h5>
+					<div class="meta">
+						by <a href="/user/{{ story.username }}/">{{ story.username }}</a>
+						<time title="{{ story.time|date:"r" }}" datetime="{{ story.time}}">{{ story.time|timesince|upto:',' }} ago</time> |
+						<a href="/comments/{{ story.id }}/">{{ story.comments|default:"0" }} comment{{ story.comments|pluralize }}</a>
+					</div>
+				</div>
+				<div class="comments">
+					<a href="/comments/{{ story.id }}/"><span class="glyphicon glyphicon-comment"></span></a>
+				</div>
+			</div>
+			{% endfor %}
+		</div>
+		{% if pages|length > 1 %}
+		<ul class="pagination hn-pagination">
+			{% if stories.number != 1 %}
+			<li><a href="{% query_string "page=1" "" %}">&laquo;</a></li>
+			{% else %}
+			<li class="disabled"><span>&laquo;</span></li>
+			{% endif %}
+
+			{% if stories.has_previous %}
+			<li><a href="{% query_string "page=stories.previous_page_number" "" %}">&lsaquo;</a></li>
+			{% else %}
+			<li class="disabled"><span>&lsaquo;</span></li>
+			{% endif %}
+
+			{% for page in pages %}
+			<li{% if page == stories.number %} class="active" {% endif %}><a href="{% query_string "page=page" "" %}">{{ page }}</a></li>
+			{% endfor %}
+
+			{% if stories.has_next %}
+			<li><a href="{% query_string "page=stories.next_page_number" "" %}">&rsaquo;</a></li>
+			{% else %}
+			<li class="disabled"><span>&rsaquo;</span></li>
+			{% endif %}
+
+			{% if stories.number != stories.paginator.num_pages %}
+			<li><a href="{% query_string "page=stories.paginator.num_pages" "" %}">&raquo;</a></li>
+			{% else %}
+			<li class="disabled"><span>&raquo;</span></li>
+			{% endif %}
+		</ul>
+	</div>
+</div>
+{% endif %}
+{% endblock %}
